@@ -2469,17 +2469,6 @@ void setupSignalHandlers(void) {
 
 void memtest(size_t megabytes, int passes);
 
-/* Returns 1 if there is --sentinel among the arguments or if
- * argv[0] is exactly "redis-sentinel". */
-int checkForSentinelMode(int argc, char **argv) {
-    int j;
-
-    if (strstr(argv[0],"redis-sentinel") != NULL) return 1;
-    for (j = 1; j < argc; j++)
-        if (!strcmp(argv[j],"--sentinel")) return 1;
-    return 0;
-}
-
 /* Function called at startup to load RDB or AOF file in memory. */
 void loadDataFromDisk(void) {
     long long start = ustime();
@@ -2512,64 +2501,9 @@ int main(int argc, char **argv) {
     srand(time(NULL)^getpid());
     gettimeofday(&tv,NULL);
     dictSetHashFunctionSeed(tv.tv_sec^tv.tv_usec^getpid());
-    server.sentinel_mode = checkForSentinelMode(argc,argv);
     initServerConfig();
 
-    /* We need to init sentinel right now as parsing the configuration file
-     * in sentinel mode will have the effect of populating the sentinel
-     * data structures with master nodes to monitor. */
-    if (server.sentinel_mode) {
-        initSentinelConfig();
-        initSentinel();
-    }
-
-    if (argc >= 2) {
-        int j = 1; /* First option to parse in argv[] */
-        sds options = sdsempty();
-        char *configfile = NULL;
-
-        /* Handle special options --help and --version */
-        if (strcmp(argv[1], "-v") == 0 ||
-            strcmp(argv[1], "--version") == 0) version();
-        if (strcmp(argv[1], "--help") == 0 ||
-            strcmp(argv[1], "-h") == 0) usage();
-        if (strcmp(argv[1], "--test-memory") == 0) {
-            if (argc == 3) {
-                memtest(atoi(argv[2]),50);
-                exit(0);
-            } else {
-                fprintf(stderr,"Please specify the amount of memory to test in megabytes.\n");
-                fprintf(stderr,"Example: ./redis-server --test-memory 4096\n\n");
-                exit(1);
-            }
-        }
-
-        /* First argument is the config file name? */
-        if (argv[j][0] != '-' || argv[j][1] != '-')
-            configfile = argv[j++];
-        /* All the other options are parsed and conceptually appended to the
-         * configuration file. For instance --port 6380 will generate the
-         * string "port 6380\n" to be parsed after the actual file name
-         * is parsed, if any. */
-        while(j != argc) {
-            if (argv[j][0] == '-' && argv[j][1] == '-') {
-                /* Option name */
-                if (sdslen(options)) options = sdscat(options,"\n");
-                options = sdscat(options,argv[j]+2);
-                options = sdscat(options," ");
-            } else {
-                /* Option argument */
-                options = sdscatrepr(options,argv[j],strlen(argv[j]));
-                options = sdscat(options," ");
-            }
-            j++;
-        }
-        resetServerSaveParams();
-        loadServerConfig(configfile,options);
-        sdsfree(options);
-    } else {
-        redisLog(REDIS_WARNING, "Warning: no config file specified, using the default config. In order to specify a config file use %s /path/to/%s.conf", argv[0], server.sentinel_mode ? "sentinel" : "redis");
-    }
+    redisLog(REDIS_WARNING, "Warning: no config file specified, using the default config. In order to specify a config file use %s /path/to/%s.conf", argv[0], server.sentinel_mode ? "sentinel" : "redis");
     if (server.daemonize) daemonize();
     initServer();
     if (server.daemonize) createPidFile();
@@ -2584,13 +2518,6 @@ int main(int argc, char **argv) {
         loadDataFromDisk();
         if (server.ipfd > 0)
             redisLog(REDIS_NOTICE,"The server is now ready to accept connections on port %d", server.port);
-        if (server.sofd > 0)
-            redisLog(REDIS_NOTICE,"The server is now ready to accept connections at %s", server.unixsocket);
-    }
-
-    /* Warning the user about suspicious maxmemory setting. */
-    if (server.maxmemory > 0 && server.maxmemory < 1024*1024) {
-        redisLog(REDIS_WARNING,"WARNING: You specified a maxmemory value that is less than 1MB (current value is %llu bytes). Are you sure this is what you really want?", server.maxmemory);
     }
 
     aeSetBeforeSleepProc(server.el,beforeSleep);
