@@ -40,8 +40,7 @@
 #include <assert.h>
 
 #include "ae.h"
-// xudong add '//'
-//#include "hiredis.h"
+#include "hiredis.h"
 #include "sds.h"
 #include "adlist.h"
 #include "zmalloc.h"

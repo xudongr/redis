@@ -415,9 +415,11 @@ int aeWait(int fd, int mask, long long milliseconds) {
 
 void aeMain(aeEventLoop *eventLoop) {
     eventLoop->stop = 0;
+    int count = 0;
     while (!eventLoop->stop) {
         if (eventLoop->beforesleep != NULL)
             eventLoop->beforesleep(eventLoop);
+        printf("%d\n", count++);
         aeProcessEvents(eventLoop, AE_ALL_EVENTS);
     }
 }
