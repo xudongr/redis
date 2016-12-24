@@ -1219,30 +1219,6 @@ int main(int argc, char **argv) {
     argc -= firstarg;
     argv += firstarg;
 
-    /* Latency mode */
-    if (config.latency_mode) {
-        cliConnect(0);
-        latencyMode();
-    }
-
-    /* Slave mode */
-    if (config.slave_mode) {
-        cliConnect(0);
-        slaveMode();
-    }
-
-    /* Pipe mode */
-    if (config.pipe_mode) {
-        if (cliConnect(0) == REDIS_ERR) exit(1);
-        pipeMode();
-    }
-
-    /* Find big keys */
-    if (config.bigkeys) {
-        cliConnect(0);
-        findBigKeys();
-    }
-
     /* Start interactive mode when no command is provided */
     if (argc == 0 && !config.eval) {
         /* Note that in repl mode we don't abort on connection error.

@@ -1,4 +1,5 @@
 include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/deps/linenoise)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin)
 
@@ -20,4 +21,12 @@ add_executable(test_dict
 
 target_link_libraries(test_dict
   redis
+  )
+
+add_executable(test_linenoise
+  test_linenoise.c
+  )
+
+target_link_libraries(test_linenoise
+  ${PROJECT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib/liblinenoise.a
   )
